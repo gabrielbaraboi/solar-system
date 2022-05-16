@@ -5,35 +5,21 @@ import com.jogamp.opengl.glu.GLU;
 import com.jogamp.opengl.glu.GLUquadric;
 import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.util.awt.TextRenderer;
-import com.jogamp.opengl.util.gl2.GLUT;
 import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.TextureData;
 import com.jogamp.opengl.util.texture.TextureIO;
-import com.jogamp.common.nio.Buffers;
-import com.jogamp.nativewindow.util.Point;
 
-import java.awt.Font;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.io.*;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 
 	public class Canvas extends GLCanvas implements GLEventListener, KeyListener {
 	private static final float SUN_RADIUS = 12f;
-
-	private static final float EARTH_RADIUS = 7.500f;
-
-	private static final float MOON_RADIUS = 4.500f;
-
-	private static final float CUBE_RADIUS = 400.00f;
+	private TextRenderer renderer;
 
 	private static final long serialVersionUID = 1L;
-	private GLUT glut;
 	private FPSAnimator animator;
 	private GLU glu;
 	private Texture earthTexture;
@@ -48,11 +34,9 @@ import java.util.ArrayList;
 	private Sun sun;
 	float cameraAzimuth = 0.0f, cameraSpeed = 0.0f, cameraElevation = 0.0f;
 
-	float cameraCoordsPosx = 0.0f, cameraCoordsPosy = 0.0f, cameraCoordsPosz = -20.0f;
+	float cameraCoordsPosX = 0.0f, cameraCoordsPosY = 0.0f, cameraCoordsPosZ = 0.0f;
 
-	// orientarea camerei
-	float cameraUpx = 0.0f, cameraUpy = 1.0f, cameraUpz = 0.0f;
-//capabilities for color depth
+	float cameraUpx = 0.0f, cameraUpy = 0.0f, cameraUpz = 0.0f;
 	public Canvas(int width, int height, GLCapabilities capabilities) {
 		super(capabilities);
 		setSize(width, height);
@@ -68,6 +52,8 @@ import java.util.ArrayList;
 		gl.glDepthFunc(GL.GL_LEQUAL);
 		gl.glDisable(GL.GL_DEPTH_TEST);
 
+		renderer = new TextRenderer(new Font("SansSerif", Font.BOLD, 16));
+
 		gl.glShadeModel(GL2.GL_SMOOTH);
 
 		gl.glClearColor(0f, 0f, 0f, 0f);
@@ -76,31 +62,30 @@ import java.util.ArrayList;
 		this.addKeyListener(this);
 		animator = new FPSAnimator(this, 60);
 		animator.start();
-		// texturile planetelor
-		String textureFile = "res\\earthmap1k.jpg";
-		earthTexture = getObjectTexture(gl, textureFile);
-		textureFile = "res\\tx_15_1.png";
-		cloudTexture = getObjectTexture(gl, textureFile);
-		textureFile = "res\\starfield.png";
-		skyTexture = getObjectTexture(gl, textureFile);
-		textureFile = "res\\preview_sun.jpg";
-		this.sun = new Sun(gl, glu, getObjectTexture(gl, textureFile));
 
-		textureFile = "res\\mercurymap.jpg";
+		String textureFile = "assets\\earth.jpg";
+		earthTexture = getObjectTexture(gl, textureFile);
+		textureFile = "assets\\clouds.png";
+		cloudTexture = getObjectTexture(gl, textureFile);
+		textureFile = "assets\\stars.png";
+		skyTexture = getObjectTexture(gl, textureFile);
+		textureFile = "assets\\sun.jpg";
+		this.sun = new Sun(gl, glu, getObjectTexture(gl, textureFile));
+		textureFile = "assets\\mercury.jpg";
 		Planet mercury = new Planet(gl, glu, getObjectTexture(gl, textureFile), 1.2f, SUN_RADIUS + 2f, 2.56f);
-		textureFile = "res\\venusmap.jpg";
+		textureFile = "assets\\venus.jpg";
 		Planet venus = new Planet(gl, glu, getObjectTexture(gl, textureFile), 0.7f, SUN_RADIUS + 12f, 3.56f);
-		textureFile = "res\\jupiter.jpg";
+		textureFile = "assets\\jupiter.jpg";
 		Planet Jupiter = new Planet(gl, glu, getObjectTexture(gl, textureFile), 0.25f, SUN_RADIUS + 65f, 8.56f);
-		textureFile = "res\\mars_1k_color.jpg";
+		textureFile = "assets\\mars.jpg";
 		Planet mars = new Planet(gl, glu, getObjectTexture(gl, textureFile), 0.3f, SUN_RADIUS + 50f, 3.56f);
-		textureFile = "res\\tx_0_0.png";
+		textureFile = "assets\\moon.png";
 		moonTexture = getObjectTexture(gl, textureFile);
-		textureFile = "res\\saturn.jpg";
+		textureFile = "assets\\saturn.jpg";
 		Planet Saturn = new Planet(gl, glu, getObjectTexture(gl, textureFile), 0.3f, SUN_RADIUS + 90f, 7.56f);
-		textureFile = "res\\uranuscyl1.jpg";
+		textureFile = "assets\\uranus.jpg";
 		Planet Uranus = new Planet(gl, glu, getObjectTexture(gl, textureFile), 0.25f, SUN_RADIUS + 105f, 6.56f);
-		textureFile = "res\\neptune_current.jpg";
+		textureFile = "assets\\neptune.jpg";
 		Planet Neptune = new Planet(gl, glu, getObjectTexture(gl, textureFile), 0.275f, SUN_RADIUS + 120f, 5.56f);
 		planets.add(mercury);
 		planets.add(venus);
@@ -122,10 +107,8 @@ import java.util.ArrayList;
 		if (!animator.isAnimating()) {
 			return;
 		}
-
 		final GL2 gl = glAutoDrawable.getGL().getGL2();
-
-		setCamera(gl, 300);
+		setCamera(gl, 400);
 		aimCamera(gl, glu);
 		moveCamera();
 		setLights(gl);
@@ -138,10 +121,13 @@ import java.util.ArrayList;
 
 		skyTexture.bind(gl);
 		skyTexture.enable(gl);
+		drawSkybox(gl);
 
-		// skybox
-		drawCube(gl);
-
+		Rectangle rectangle = getBounds();
+		int width = rectangle.width;
+		int height = rectangle.height;
+		String text = "by Gabriel Baraboi, Bogdan Burileanu and Ion Covali";
+		drawText(text, width, height);
 	}
 
 	private void drawEarthAndMoon(GL2 gl) {
@@ -160,7 +146,13 @@ import java.util.ArrayList;
 
 	}
 
-	// pamant si cer
+	private void drawText(String text, int width, int height) {
+		renderer.beginRendering(width, height);
+		renderer.setColor(1.0f, 0.2f, 0.2f, 0.8f);
+		renderer.draw(text, 10, 10);
+		renderer.endRendering();
+	}
+
 	private void drawEarth(GL2 gl) {
 
 		float[] rgba = { 1f, 1f, 1f };
@@ -168,7 +160,6 @@ import java.util.ArrayList;
 		gl.glMaterialfv(GL2.GL_FRONT, GL2.GL_SPECULAR, rgba, 0);
 		gl.glMaterialf(GL2.GL_FRONT, GL2.GL_SHININESS, 0.5f);
 
-		gl.glPushName(4);
 		earthAngle = (earthAngle + 0.1f) % 360f;
 		cloudTexture.enable(gl);
 		cloudTexture.bind(gl);
@@ -180,7 +171,7 @@ import java.util.ArrayList;
 		final int stacks = 16;
 		gl.glEnable(GL.GL_BLEND);
 		gl.glBlendFunc(GL.GL_SRC_COLOR, GL.GL_DST_ALPHA);
-		// clouds above the earth using a bigger sphere and applying blend to it
+
 		GLUquadric clouds = glu.gluNewQuadric();
 		glu.gluQuadricOrientation(clouds, GLU.GLU_OUTSIDE);
 		glu.gluQuadricTexture(clouds, true);
@@ -211,7 +202,6 @@ import java.util.ArrayList;
 		gl.glPushMatrix();
 		moonTexture.enable(gl);
 		moonTexture.bind(gl);
-		gl.glPushName(5);
 		Angle = (Angle + 1f) % 360f;
 		final float distance = 12.000f;
 		final float x = (float) Math.sin(Math.toRadians(Angle)) * distance;
@@ -235,7 +225,6 @@ import java.util.ArrayList;
 		gl.glPopName();
 	}
 
-	// gets the texture for a planet
 	private Texture getObjectTexture(GL2 gl, String fileName) {
 		InputStream stream = null;
 		Texture tex = null;
@@ -256,12 +245,10 @@ import java.util.ArrayList;
 	}
 
 	private void setLights(GL2 gl) {
-
 		float SHINE_ALL_DIRECTIONS = 1;
 		float[] lightPos = { 0, 0, 0, SHINE_ALL_DIRECTIONS };
 		float[] lightColorAmbient = { 0.5f, 0.5f, 0.5f, 1f };
 		float[] lightColorSpecular = { 0.8f, 0.8f, 0.8f, 1f };
-		// Seteaza parametrii pentru lumina.
 		gl.glLightfv(GL2.GL_LIGHT1, GL2.GL_POSITION, lightPos, 0);
 		gl.glLightfv(GL2.GL_LIGHT1, GL2.GL_AMBIENT, lightColorAmbient, 0);
 		gl.glLightfv(GL2.GL_LIGHT1, GL2.GL_SPECULAR, lightColorSpecular, 0);
@@ -288,15 +275,13 @@ import java.util.ArrayList;
 		gl.glViewport(0, 0, width, height);
 	}
 
-
-	// skybox
-	private void drawCube(GL gl) {
+	private void drawSkybox(GL gl) {
 
 		skyTexture.enable(gl);
 		skyTexture.bind(gl);
 
 		((GLPointerFunc) gl).glDisableClientState(GL2.GL_VERTEX_ARRAY);
-		final float radius = 150f;
+		final float radius = 200f;
 		final int slices = 16;
 		final int stacks = 16;
 		gl.glEnable(GL.GL_BLEND);
@@ -311,12 +296,13 @@ import java.util.ArrayList;
 		gl.glEnable(GL.GL_BLEND);
 		gl.glBlendFunc(GL.GL_SRC_COLOR, GL.GL_DST_ALPHA);
 	}
+
 	public void moveCamera() {
 		float[] tmp = polarToCartesian(cameraAzimuth, cameraSpeed, cameraElevation);
 
-		cameraCoordsPosx += tmp[0];
-		cameraCoordsPosy += tmp[1];
-		cameraCoordsPosz += tmp[2];
+		cameraCoordsPosX += tmp[0];
+		cameraCoordsPosY += tmp[1];
+		cameraCoordsPosZ += tmp[2];
 	}
 
 	public void aimCamera(GL2 gl, GLU glu) {
@@ -330,15 +316,14 @@ import java.util.ArrayList;
 		cameraUpy = camUp[1];
 		cameraUpz = camUp[2];
 
-		glu.gluLookAt(cameraCoordsPosx, cameraCoordsPosy, cameraCoordsPosz, cameraCoordsPosx + tmp[0],
-				cameraCoordsPosy + tmp[1], cameraCoordsPosz + tmp[2], cameraUpx, cameraUpy, cameraUpz);
+		glu.gluLookAt(cameraCoordsPosX, cameraCoordsPosY, cameraCoordsPosZ, cameraCoordsPosX + tmp[0],
+				cameraCoordsPosY + tmp[1], cameraCoordsPosZ + tmp[2], cameraUpx, cameraUpy, cameraUpz);
 	}
 
 	private float[] polarToCartesian(float azimuth, float length, float altitude) {
 		float[] result = new float[3];
 		float x, y, z;
 
-		// Do x-z calculation
 		float theta = (float) Math.toRadians(90 - azimuth);
 		float tantheta = (float) Math.tan(theta);
 		float radian_alt = (float) Math.toRadians(altitude);
@@ -354,7 +339,6 @@ import java.util.ArrayList;
 			z = -z;
 		}
 
-		// Calculate y, and adjust x and z
 		y = (float) (Math.sqrt(z * z + x * x) * Math.sin(radian_alt));
 
 		if (length < 0) {
@@ -373,7 +357,6 @@ import java.util.ArrayList;
 		return result;
 	}
 
-	// miscarea camerei prin butoane
 	public void keyPressed(KeyEvent event) {
 		if (event.getKeyCode() == KeyEvent.VK_UP) {
 			cameraElevation -= 2;
@@ -412,15 +395,7 @@ import java.util.ArrayList;
 			cameraAzimuth = 359;
 	}
 
-	private boolean[] keys = new boolean[250];
-
-	public GLUT getGlut() {
-		return glut;
-	}
-
-	public void setGlut(GLUT glut) {
-		this.glut = glut;
-	}
+	private final boolean[] keys = new boolean[250];
 
 	@Override
 	public void keyTyped(KeyEvent e) {

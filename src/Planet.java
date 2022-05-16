@@ -1,20 +1,19 @@
 import com.jogamp.opengl.*;
-import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.glu.GLU;
 import com.jogamp.opengl.glu.GLUquadric;
 import com.jogamp.opengl.util.texture.Texture;
 
 
 public class Planet {
-	private GL2 gl;
-	private GLU glu;
-	private Texture planetTexture;
+	private final GL2 gl;
+	private final GLU glu;
+	private final Texture planetTexture;
 	private float angle;
-	private float distance;
+	private final float distance;
 
 	private float rotationAngle = 0;
 	private float speed = 0;
-	private float radius;
+	private final float radius;
 
 	public Planet(GL2 gl, GLU glu, Texture planetTexture, float speed, float distance, float radius) {
 		this.gl = gl;
@@ -34,21 +33,16 @@ public class Planet {
 		final float z = 0;
 
 		gl.glTranslatef(x, y, z);
-
 		draw();
-
 		gl.glPopMatrix();
 
 	}
 
 	private void draw() {
-
-		
 		float[] rgba = { 1f, 1f, 1f };
 		gl.glMaterialfv(GL2.GL_FRONT, GL2.GL_AMBIENT, rgba, 0);
 		gl.glMaterialfv(GL2.GL_FRONT, GL2.GL_SPECULAR, rgba, 0);
 		gl.glMaterialf(GL2.GL_FRONT, GL2.GL_SHININESS, 0.6f);
-
 		
 		planetTexture.enable(gl);
 		planetTexture.bind(gl);

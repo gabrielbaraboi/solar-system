@@ -4,9 +4,9 @@ import com.jogamp.opengl.glu.GLUquadric;
 import com.jogamp.opengl.util.texture.Texture;
 
 public class Sun {
-	private GL2 gl;
-	private GLU glu;
-	private Texture sunTexture;
+	private final GL2 gl;
+	private final GLU glu;
+	private final Texture sunTexture;
 	private float angle = 0;
 
 	public Sun(GL2 gl, GLU glu, Texture sunTexture) {
@@ -16,15 +16,12 @@ public class Sun {
 	}
 
 	public void display() {
-
-	
 		float[] rgba = { 1f, 1f, 1f };
 		gl.glMaterialfv(GL2.GL_FRONT, GL2.GL_AMBIENT, rgba, 0);
 		gl.glMaterialfv(GL2.GL_FRONT, GL2.GL_SPECULAR, rgba, 0);
 		gl.glMaterialf(GL2.GL_FRONT, GL2.GL_SHININESS, 1f);
 		gl.glClear(GL2.GL_COLOR_BUFFER_BIT);
 		gl.glClear(GL2.GL_DEPTH_BUFFER_BIT);
-
 
 		sunTexture.enable(gl);
 		sunTexture.bind(gl);
@@ -33,8 +30,6 @@ public class Sun {
 
 		gl.glPushMatrix();
 		gl.glRotatef(angle, 0.8f, 0.1f, 0);
-
-	
 
 		GLUquadric sun = glu.gluNewQuadric();
 		glu.gluQuadricTexture(sun, true);

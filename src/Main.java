@@ -10,7 +10,7 @@ public class Main {
 		final GLProfile profile = GLProfile.get(GLProfile.GL2);
 		GLCapabilities capabilities = new GLCapabilities(profile);
 
-		Canvas canvas = new Canvas(800, 800, capabilities);
+		Canvas canvas = new Canvas(1000, 1000, capabilities);
 		
 		JFrame frame = new JFrame("Solar system");
 		frame.getContentPane().add(canvas, BorderLayout.CENTER);
